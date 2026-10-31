@@ -79,3 +79,36 @@ joinsRouter.get("/joined-events", verifyToken, async (_req: Request, res: Respon
     next(error);
   }
 });
+
+joinsRouter.delete("/events/:id/join", verifyToken, async (req: Request, res: Response<unknown, AuthLocals>, next: NextFunction): Promise<void> => {
+  try {
+    const rawId = req.params.id;
+    const id = typeof rawId === "string" ? rawId : "";
+    if (!id || !isValidObjectIdString(id)) {
+      res.status(400).json({ message: "Invalid event ID format." });
+      return;
+    }
+
+    const eventsCol = await getEventsCollection();
+    const event = await eventsCol.findOne({ _id: new ObjectId(id) });
+    if (!event) {
+      res.status(404).json({ message: "Event not found." });
+      return;
+    }
+
+    const joinedCol = await getJoinedEventsCollection();
+    const result = await joinedCol.deleteOne({
+      eventId: event._id,
+      userEmail: res.locals.userEmail,
+    });
+
+    if (result.deletedCount === 0) {
+      res.status(404).json({ message: "You have not joined this event." });
+      return;
+    }
+
+    res.status(200).json({ message: "RSVP cancelled successfully." });
+  } catch (error) {
+    next(error);
+  }
+});

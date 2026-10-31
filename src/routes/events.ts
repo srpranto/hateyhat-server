@@ -1,6 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { ObjectId } from "mongodb";
-import { getEventsCollection } from "../db.js";
+import { getEventsCollection, getJoinedEventsCollection } from "../db.js";
 import { getDhakaToday } from "../date.js";
 import { isValidObjectIdString, validateEventInput } from "../validation.js";
 import { verifyToken } from "../middleware/verify-token.js";
@@ -127,6 +127,11 @@ eventsRouter.put("/events/:id", verifyToken, async (req: Request, res: Response<
     }
 
     await col.updateOne({ _id: new ObjectId(id) }, { $set: validation.data });
+    const joinedCol = await getJoinedEventsCollection();
+    await joinedCol.updateMany(
+      { eventId: new ObjectId(id) },
+      { $set: { eventTitle: validation.data.title } }
+    );
     const updated = await col.findOne({ _id: new ObjectId(id) });
     res.status(200).json({
       message: "Event updated successfully.",
@@ -159,6 +164,8 @@ eventsRouter.delete("/events/:id", verifyToken, async (req: Request, res: Respon
     }
 
     await col.deleteOne({ _id: new ObjectId(id) });
+    const joinedCol = await getJoinedEventsCollection();
+    await joinedCol.deleteMany({ eventId: new ObjectId(id) });
     res.status(200).json({
       message: "Event deleted successfully.",
       deletedId: id,
