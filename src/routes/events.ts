@@ -86,7 +86,7 @@ eventsRouter.post("/events", verifyToken, async (req: Request, res: Response<unk
   }
 });
 
-eventsRouter.get("/my-events", verifyToken, async (_req: Request, res: Response<unknown, AuthLocals>, next: NextFunction): Promise<void> => {
+eventsRouter.get(["/my-events", "/my_events", "/myevents"], verifyToken, async (_req: Request, res: Response<unknown, AuthLocals>, next: NextFunction): Promise<void> => {
   try {
     const col = await getEventsCollection();
     const events = await col

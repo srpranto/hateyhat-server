@@ -57,7 +57,7 @@ joinsRouter.post("/events/:id/join", verifyToken, async (req: Request, res: Resp
   }
 });
 
-joinsRouter.get("/joined-events", verifyToken, async (_req: Request, res: Response<unknown, AuthLocals>, next: NextFunction): Promise<void> => {
+joinsRouter.get(["/joined-events", "/joined_events", "/joinedevents"], verifyToken, async (_req: Request, res: Response<unknown, AuthLocals>, next: NextFunction): Promise<void> => {
   try {
     const joinedCol = await getJoinedEventsCollection();
     const joins = await joinedCol.find({ userEmail: res.locals.userEmail }).toArray();
