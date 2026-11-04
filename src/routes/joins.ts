@@ -50,8 +50,21 @@ joinsRouter.post("/events/:id/join", verifyToken, async (req: Request, res: Resp
       joinedAt: new Date().toISOString(),
     };
 
-    await joinedCol.insertOne(doc);
-    res.status(201).json({ message: "Successfully joined the event." });
+    try {
+      await joinedCol.insertOne(doc);
+      res.status(201).json({ message: "Successfully joined the event." });
+    } catch (err: unknown) {
+      if (
+        typeof err === "object" &&
+        err !== null &&
+        "code" in err &&
+        (err as { code: number }).code === 11000
+      ) {
+        res.status(409).json({ message: "You have already joined this event." });
+        return;
+      }
+      throw err;
+    }
   } catch (error) {
     next(error);
   }

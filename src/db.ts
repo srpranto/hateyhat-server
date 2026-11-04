@@ -4,6 +4,26 @@ import type { EventDocument, JoinedEventDocument } from "./types.js";
 
 let client: MongoClient | null = null;
 let dbInstance: Db | null = null;
+let indexesEnsured = false;
+
+export async function ensureIndexes(db: Db): Promise<void> {
+  if (indexesEnsured) return;
+  try {
+    const eventsCol = db.collection<EventDocument>("events");
+    const joinedCol = db.collection<JoinedEventDocument>("joinedEvents");
+
+    await Promise.all([
+      eventsCol.createIndex({ eventDate: 1 }),
+      eventsCol.createIndex({ creatorEmail: 1, eventDate: 1 }),
+      joinedCol.createIndex({ eventId: 1, userEmail: 1 }, { unique: true }),
+      joinedCol.createIndex({ userEmail: 1, joinedAt: -1 }),
+      joinedCol.createIndex({ eventId: 1 }),
+    ]);
+    indexesEnsured = true;
+  } catch (err) {
+    console.warn("MongoDB ensureIndexes note:", err);
+  }
+}
 
 export async function getDb(): Promise<Db> {
   if (dbInstance) {
@@ -15,6 +35,7 @@ export async function getDb(): Promise<Db> {
     client = newClient;
   }
   dbInstance = client.db(env.MONGODB_DB_NAME);
+  void ensureIndexes(dbInstance);
   return dbInstance;
 }
 
